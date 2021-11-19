@@ -11,7 +11,7 @@ int main(int argc, char **argv){
         exit(0);
     }
 
-    clientfd= open_clientfd(argv[0], argv[1]);
+    clientfd= Open_clientfd(argv[0], atoi(argv[1]));
     rio_readinitb(&rio, clientfd);
 
     while(fgets(buf, MAXLINE, stdin) != NULL)

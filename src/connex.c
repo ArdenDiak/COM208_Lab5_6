@@ -11,7 +11,7 @@ int open_clientfd(char *hostname, char *port)
     hints.ai_flags = AI_NUMERICSERV | AI_ADDRCONFIG; //numeric port arg
 
     if((rc = getaddrinfo(hostname, port, &hints, &listp)) != 0){
-        printf("getaddrinfo exited with error code %d\n", errno);
+        printf(">> getaddrinfo exited with error code %s\n", gai_strerror(rc));
         exit(1);
     }
 
@@ -45,7 +45,7 @@ int open_listenfd(char *port)
     hints.ai_flags |= AI_NUMERICSERV | AI_ADDRCONFIG; //numeric port arg
 
     if((rc = getaddrinfo(NULL, port, &hints, &listp)) != 0){
-        printf("getaddrinfo exited with error code %d\n", errno);
+        printf("getaddrinfo exited with error code %d\n", rc);
         exit(1);
     }
 
