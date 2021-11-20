@@ -2,9 +2,10 @@
 #include "include/connex.h"
 
 int main(int argc, char **argv){
-    int clientfd;
+
+    int clientfd, input_filefd, bytesRead;
     char buf[MAXLINE];
-    rio_t rio;
+    rio_t rio_cli, rio_file;
 
     int filename_len= 200;
     char *filename= malloc(sizeof(char)*filename_len);
@@ -15,26 +16,45 @@ int main(int argc, char **argv){
     }
 
     clientfd= open_clientfd(argv[1], argv[2]); //argv[0] is the exec!!!!!
-    rio_readinitb(&rio, clientfd);
 
-    printf("input filename: ");
-    fgets(filename, 200, stdin);
-    filename[strcspn(filename, "\n")] = 0; //remove last /n
+    printf("filename: ");
+    while(1) {
+        /* Get filename from user to send to server */
+        fgets(filename, 200, stdin);
+        if(strlen(filename) == 1 && filename[0] == '\n') {
+            char endTX[10]="END TX";
+            rio_writen(clientfd, endTX, strlen(endTX));
+            printf("No filename inputted => end transmission\n");
+            break;
+        }
 
-    int fd, bytesRead;
+        filename[strcspn(filename, "\n")] = 0; //remove last /n
 
-    if ((fd = open(filename, O_RDONLY)) < 0) {
-        perror("open");
-        exit(1);
+        //open the requesed for reading
+        if ((input_filefd = open(filename, O_RDONLY)) < 0) {
+            perror("open");
+            exit(1);
+        }
+
+        rio_readinitb(&rio_cli, clientfd);
+        rio_readinitb(&rio_file, input_filefd);
+
+        //transmit all lines of the file to srv
+        while((bytesRead= rio_readlineb(&rio_file, buf, MAXLINE)) != 0) {
+            rio_writen(clientfd, buf, strlen(buf));
+            //rio_readlineb(&rio_cli, buf, MAXLINE);
+            //fputs(buf, stdout);
+        }
+
+        //await response
+        while((bytesRead= rio_readlineb(&rio_file, buf, MAXLINE)) != 0) {
+            fputs(buf, stdout);
+        }
+
+        printf("filename: ");
     }
 
-    while((bytesRead= read(fd, buf, MAXLINE)) != 0) {
-        rio_writen(clientfd, buf, bytesRead);
-        rio_readlineb(&rio, buf, MAXLINE);
-        fputs(buf, stdout);
-    }
-
+    free(filename);
     close(clientfd);
     exit(0);
 }
-
