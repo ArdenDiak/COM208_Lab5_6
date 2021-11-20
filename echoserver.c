@@ -8,25 +8,22 @@ int main(int argc, char **argv)
     int listenfd, connfd;
     socklen_t clientlen;
     struct sockaddr_in clientaddr;
-    struct hostent *hp;
-    char *haddrp, *port;
+    char client_hostname[MAXLINE], client_port[MAXLINE];
 
     if (argc != 2) {
         fprintf(stderr, "usage: %s <port>\n", argv[0]);
         exit(0);
     }
-    port = argv[1];
 
-    listenfd = Open_listenfd(port);
+    listenfd = open_listenfd(argv[1]);
     while (1) {
-        clientlen = sizeof(clientaddr);
+        clientlen = sizeof(struct sockaddr_storage);
         connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
 
         /* Determine the domain name and IP address of the client */
-        hp = Gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
-                   sizeof(clientaddr.sin_addr.s_addr), AF_INET);
-        haddrp = inet_ntoa(clientaddr.sin_addr);
-        printf("server connected to %s (%s)\n", hp->h_name, haddrp);
+        getnameinfo((SA *) &clientaddr, clientlen, client_hostname, MAXLINE,
+                    client_port, MAXLINE, 0);
+        printf("Connected to (%s, %s)\n", client_hostname, client_port);
 
         echo(connfd);
         Close(connfd);

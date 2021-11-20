@@ -23,30 +23,34 @@ int open_clientfd(char *hostname, char *port)
         //once valid socket found => send connection request
         if(connect(clientfd, p->ai_addr, p->ai_addrlen) != -1)
             break;
-        close(clientfd); //connection failed
+
+        if (close(clientfd) < 0) { /* Connect failed, try another */
+            fprintf(stderr, "open_clientfd: close failed: %s\n", strerror(errno));
+            return -1;
+        }
     }
 
+    /* Clean up */
     freeaddrinfo(listp);
-    if(!p)
+    if(!p)  //all connects failed
         return -1;
-    else
+    else    //last one succeeded
         return clientfd;
 }
 
 int open_listenfd(char *port)
 {
-    int listenfd, optval=1;
+    int listenfd, rc, optval=1;
     struct addrinfo *p, *listp, hints;
-    int rc;
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE; //accept connex from any valid host
-    hints.ai_flags |= AI_NUMERICSERV | AI_ADDRCONFIG; //numeric port arg
+    hints.ai_flags = AI_PASSIVE;                      //accept connex from any valid host
+    hints.ai_flags |= AI_NUMERICSERV | AI_ADDRCONFIG; //... on any port number & address
 
-    if((rc = getaddrinfo(NULL, port, &hints, &listp)) != 0){
-        printf("getaddrinfo exited with error code %d\n", rc);
-        exit(1);
+    if((rc = getaddrinfo(NULL, port, &hints, &listp)) != 0) {
+        fprintf(stderr, "getaddrinfo failed (port %s): %s\n", port, gai_strerror(rc));
+        return -2;
     }
 
     //walk list of available addrs for given hostname
@@ -55,16 +59,19 @@ int open_listenfd(char *port)
             continue;  //socket fail, go to next
 
         /* Eliminates "Address already in use" error from bind */
-        if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,
-                    (const void *)&optval , sizeof(int)) < 0)
-            return -1;
+        setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval , sizeof(int));
 
         //kernel associates socket addr with sockfd
         if(bind(listenfd, p->ai_addr, p->ai_addrlen) == 0)
             break; //success
-        close(listenfd); //bind failed, try next
+
+        if (close(listenfd) < 0) { /* Connect failed, try another */
+            fprintf(stderr, "open_clientfd: close failed: %s\n", strerror(errno));
+            return -1;
+        }
     }
 
+    /* Clean up */
     freeaddrinfo(listp);
     if(!p) //no address worked
         return -1;

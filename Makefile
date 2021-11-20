@@ -1,40 +1,23 @@
 CC= gcc
-CFLAGS= -I$(IDIR)
+CFLAGS= -I $(IDIR)
 
 IDIR= include
-DEPS= $(wildcard $(IDIR)/*.h)
+DEPS = include/csapp.h include/connex.h
+OBJ= src/csapp.o src/connex.o
 
-SRCDIR= src
-SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
-
-OBJDIR= obj
-OBJ_FILES = $(patsubst %.c, $(OBJDIR)/%.o, $(SRC_FILES))
-
-OBJ_FILES: $(SRC_FILES)
+# $@ and $^, are the left and right sides of the :, respectively
+%.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-#Echo Client files
-ECHO_OBJ_FILES= obj/echoclient.o
+# Echo Client
+ECHO_CLI_OBJ= echoclient.o
+echoclient: $(ECHO_CLI_OBJ) $(OBJ)
+		$(CC) -o $@ $^ $(CFLAGS)
 
-ECHO_OBJ_FILES: echoclient.c
-	$(CC) -c $< -o $@ $(CFLAGS)
+# Echo Server
+ECHO_SRV_OBJ= echoserver.o
+echoserver: $(ECHO_SRV_OBJ) $(OBJ)
+		$(CC) -o $@ $^ $(CFLAGS)
 
-#echoclient depends on object files (perhaps remove cflags)
-echoclient: $(ECHO_OBJ_FILES) $(OBJ_FILES)
-	$(CC) -o $@ $^ $(CFLAGS)
-
-
-#Echo Server Files
-ECHOSRV_OBJ_FILES= obj/echoserver.o
-
-ECHOSRV_OBJ_FILES: echoserver.c
-	$(CC) -c -o $@ $< $(CFLAGS)
-
-#echoserver depends on object files (perhaps remove cflags)
-echoserver: $(ECHOSRV_OBJ_FILES) $(OBJ_FILES)
-	$(CC) -o $@ $^ $(CFLAGS)
-
-
-#delete unecessary object files
 clean:
-	$(NO_ECHO) rm -f $(OBJ_DIR)/*.o
+	$(NO_ECHO) rm -f *.o src/*.o
