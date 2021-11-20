@@ -20,4 +20,4 @@ echoserver: $(ECHO_SRV_OBJ) $(OBJ)
 		$(CC) -o $@ $^ $(CFLAGS)
 
 clean:
-	$(NO_ECHO) rm -f *.o src/*.o
+	$(NO_ECHO) rm -f *.o src/*.o echoclient echoserver
