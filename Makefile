@@ -2,8 +2,8 @@ CC= gcc
 CFLAGS= -I $(IDIR)
 
 IDIR= include
-DEPS = include/csapp.h include/connex.h
-OBJ= src/csapp.o src/connex.o
+DEPS = include/csapp.h include/connex.h include/fileStats.h
+OBJ= src/csapp.o src/connex.o src/fileStats.o
 
 # $@ and $^, are the left and right sides of the :, respectively
 %.o: %.c

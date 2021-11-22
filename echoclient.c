@@ -3,7 +3,7 @@
 
 int main(int argc, char **argv){
 
-    int clientfd, input_filefd, bytesRead;
+    int clientfd, in_fd, bytesRead;
     char buf[MAXLINE];
     rio_t rio_cli, rio_file;
 
@@ -31,24 +31,31 @@ int main(int argc, char **argv){
         filename[strcspn(filename, "\n")] = 0; //remove last /n
 
         //open the requesed for reading
-        if ((input_filefd = open(filename, O_RDONLY)) < 0) {
-            perror("open");
+        if ((in_fd = open(filename, O_RDONLY)) < 0) {
+            perror("fopen");
             exit(1);
         }
 
         rio_readinitb(&rio_cli, clientfd);
-        rio_readinitb(&rio_file, input_filefd);
+        rio_readinitb(&rio_file, in_fd);
 
         //transmit all lines of the file to srv
-        while((bytesRead= rio_readlineb(&rio_file, buf, MAXLINE)) != 0) {
+        int n;
+        while((n = Rio_readlineb(&rio_file, buf, MAXLINE)) != 0)
+        {
             rio_writen(clientfd, buf, strlen(buf));
-            //rio_readlineb(&rio_cli, buf, MAXLINE);
-            //fputs(buf, stdout);
+            printf(">>%d\n", n);
         }
+        printf("sent file");
+
+        //notify SRV that file transmit is done
+        char endFile[10]= "END FILE";
+        rio_writen(clientfd, endFile, strlen(endFile));
+        printf("sent END FILE");
 
         //await response
-        while((bytesRead= rio_readlineb(&rio_file, buf, MAXLINE)) != 0) {
-            fputs(buf, stdout);
+        while((bytesRead= rio_readlineb(&rio_cli, buf, MAXLINE)) != 0) {
+            printf("response >> %s\n", buf);
         }
 
         printf("filename: ");
